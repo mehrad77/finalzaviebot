@@ -203,6 +203,106 @@ export default {
 				}
 				return new Response('ok');
 			})
+			.on('chatid', async function(context: TelegramExecutionContext) {
+				try {
+					const update = context.update;
+					const message = update?.message;
+					const user = message?.from;
+
+					if (user) {
+						// Save/update user in database
+						await upsertUser(env.bot_users_db, {
+							telegram_id: user.id,
+							username: user.username,
+							first_name: user.first_name,
+							language_code: user.language_code,
+							is_bot: user.is_bot,
+						});
+
+						// Log interaction for /chatid command
+						await logInteraction(env.bot_users_db, user.id, 'command', message?.text, '/chatid');
+
+						await context.reply(`Your chat ID is: \`${user.id}\``);
+					}
+				} catch (error) {
+					console.error('Error handling chatid command:', error);
+					const errorMessage = `Sorry, something went wrong: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`;
+					await context.reply(errorMessage);
+				}
+				return new Response('ok');
+			})
+			.on('stats', async function(context: TelegramExecutionContext) {
+				try {
+					const update = context.update;
+					const message = update?.message;
+					const user = message?.from;
+
+					if (user) {
+						// Save/update user in database
+						await upsertUser(env.bot_users_db, {
+							telegram_id: user.id,
+							username: user.username,
+							first_name: user.first_name,
+							language_code: user.language_code,
+							is_bot: user.is_bot,
+						});
+
+						// Check if this is the admin requesting stats
+						if (env.ADMIN_CHAT_ID && user.id.toString() === env.ADMIN_CHAT_ID) {
+							const stats = await getUserStats(env.bot_users_db);
+							const topUsers = await getTopUsers(env.bot_users_db, 5);
+							const statsMessage = formatStatsMessage(stats, topUsers);
+							await context.reply(statsMessage);
+
+							// Log interaction for /stats command
+							await logInteraction(env.bot_users_db, user.id, 'command', message?.text, '/stats');
+						} else {
+							await context.reply('Sorry, this command is only available to administrators.');
+						}
+					}
+				} catch (error) {
+					console.error('Error handling stats command:', error);
+					const errorMessage = `Sorry, something went wrong: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`;
+					await context.reply(errorMessage);
+				}
+				return new Response('ok');
+			})
+			.on('report', async function(context: TelegramExecutionContext) {
+				try {
+					const update = context.update;
+					const message = update?.message;
+					const user = message?.from;
+
+					if (user) {
+						// Save/update user in database
+						await upsertUser(env.bot_users_db, {
+							telegram_id: user.id,
+							username: user.username,
+							first_name: user.first_name,
+							language_code: user.language_code,
+							is_bot: user.is_bot,
+						});
+
+						// Check if this is the admin requesting report
+						if (env.ADMIN_CHAT_ID && user.id.toString() === env.ADMIN_CHAT_ID) {
+							const stats = await getUserStats(env.bot_users_db);
+							const topUsers = await getTopUsers(env.bot_users_db, 5);
+							const statsMessage = formatStatsMessage(stats, topUsers);
+							await context.reply(statsMessage);
+
+							// Log interaction for /report command
+							await logInteraction(env.bot_users_db, user.id, 'command', message?.text, '/report');
+						} else {
+							await context.reply('Sorry, this command is only available to administrators.');
+						}
+					}
+				} catch (error) {
+					console.error('Error handling report command:', error);
+					const errorMessage = `Sorry, something went wrong: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`;
+					await context.reply(errorMessage);
+				}
+				return new Response('ok');
+			})
 			.on('message', async function(context: TelegramExecutionContext) {
 				try {
 					const update = context.update;
@@ -219,33 +319,14 @@ export default {
 							is_bot: user.is_bot,
 						});
 
-						// Handle special commands
-						const text = message?.text?.toLowerCase();
-
-						// Check for /chatid command
-						if (text === '/chatid') {
-							await context.reply(`Your chat ID is: \`${user.id}\``);
-							// Log interaction for /chatid command
-							await logInteraction(env.bot_users_db, user.id, 'command', message?.text, '/chatid');
-							return new Response('ok');
-						}
-
-						// Check if this is the admin requesting stats
-						if (env.ADMIN_CHAT_ID && user.id.toString() === env.ADMIN_CHAT_ID) {
-							if (text === '/stats' || text === '/report') {
-								const stats = await getUserStats(env.bot_users_db);
-								const topUsers = await getTopUsers(env.bot_users_db, 5);
-								const statsMessage = formatStatsMessage(stats, topUsers);
-								await context.reply(statsMessage);
-								return new Response('ok');
-							}
-						}
-
 						// Log interaction
 						await logInteraction(env.bot_users_db, user.id, 'message', message?.text);
 
-						// Regular bot response
-						await context.reply('yalan dunya!');
+						// Regular bot response (only for non-command messages)
+						const text = message?.text?.toLowerCase();
+						if (!text?.startsWith('/')) {
+							await context.reply('yalan dunya!');
+						}
 					}
 				} catch (error) {
 					console.error('Error handling message:', error);
