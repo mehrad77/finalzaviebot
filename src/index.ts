@@ -219,9 +219,19 @@ export default {
 							is_bot: user.is_bot,
 						});
 
+						// Handle special commands
+						const text = message?.text?.toLowerCase();
+
+						// Check for /chatid command
+						if (text === '/chatid') {
+							await context.reply(`Your chat ID is: \`${user.id}\``);
+							// Log interaction for /chatid command
+							await logInteraction(env.bot_users_db, user.id, 'command', message?.text, '/chatid');
+							return new Response('ok');
+						}
+
 						// Check if this is the admin requesting stats
 						if (env.ADMIN_CHAT_ID && user.id.toString() === env.ADMIN_CHAT_ID) {
-							const text = message?.text?.toLowerCase();
 							if (text === '/stats' || text === '/report') {
 								const stats = await getUserStats(env.bot_users_db);
 								const topUsers = await getTopUsers(env.bot_users_db, 5);
