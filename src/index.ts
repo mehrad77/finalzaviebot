@@ -198,7 +198,8 @@ export default {
 					}
 				} catch (error) {
 					console.error('Error handling start command:', error);
-					await context.reply('Sorry, something went wrong.');
+					const errorMessage = `Sorry, something went wrong: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`;
+					await context.reply(errorMessage);
 				}
 				return new Response('ok');
 			})
@@ -238,7 +239,8 @@ export default {
 					}
 				} catch (error) {
 					console.error('Error handling message:', error);
-					await context.reply('Sorry, something went wrong.');
+					const errorMessage = `Sorry, something went wrong: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`;
+					await context.reply(errorMessage);
 				}
 				return new Response('ok');
 			})
