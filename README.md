@@ -1,13 +1,15 @@
-# Telegram Bot with User Analytics
+# Telegram Bot with User Analytics & Natural Language Reminders
 
-This is a Telegram bot built with Cloudflare Workers and D1 database that tracks user interactions and provides analytics for administrators.
+This is a Telegram bot built with Cloudflare Workers and D1 database that tracks user interactions, provides analytics for administrators, and offers a powerful natural language reminder system.
 
 ## Features
 
 - **User Tracking**: Automatically registers and tracks all users who interact with the bot
 - **Admin Reports**: Provides detailed statistics for administrators
 - **User Analytics**: Tracks interaction counts, first/last seen dates, and user information
+- **Natural Language Reminders**: Set, manage, and receive reminders using natural language
 - **Database Storage**: Uses Cloudflare D1 for persistent data storage
+- **Scheduled Processing**: Automatic reminder delivery via cron jobs
 
 ## Setup
 
@@ -75,15 +77,39 @@ To find your Telegram user ID:
 ### For Regular Users
 
 - Send `/start` to begin interacting with the bot
-- Send any message to interact with the bot
-- The bot will respond with "yalan dunya!" to all messages
+- Send `/help` to see all available commands and examples
+- Send any message to interact with the bot (bot responds with "yalan dunya!")
+
+#### Reminder Commands
+
+- `/remind me to <task> <time>` - Create a new reminder using natural language
+  - Examples:
+    - `/remind me to call mom tomorrow at 7pm`
+    - `/remind me to submit the report Friday at 2pm`
+    - `/remind me to water plants this evening`
+    - `/remind me to renew license on March 15th`
+    - `/remind me to check status in 2 weeks`
+
+- `/reminders` - View all your active reminders
+- `/reminders delete <id>` - Delete a specific reminder
+
+The bot understands natural language date/time expressions and will:
+1. Parse your request and extract the task and timing
+2. Ask for confirmation if the timing looks correct
+3. Send you a reminder at the specified time
+4. Handle timezone conversion (default: Asia/Tehran)
 
 ### For Administrators
 
 When you're set as the admin (via `ADMIN_CHAT_ID`), you can use these commands:
 
+#### Standard Admin Commands
 - `/stats` - Get comprehensive bot statistics
 - `/report` - Same as `/stats`, shows detailed analytics
+
+#### Reminder Admin Commands
+- `/admin reminders` - View all active reminders from all users
+- `/admin reminders <user_id>` - View all reminders for a specific user
 
 ### Admin Report Includes:
 
@@ -94,15 +120,24 @@ When you're set as the admin (via `ADMIN_CHAT_ID`), you can use these commands:
 - 💬 Total interactions
 - 🏆 Top 5 users by interaction count
 
+### Admin Reminder Reports Include:
+
+- 📋 All active reminders across users
+- 👤 User information (name, ID) for each reminder
+- ⏰ Scheduled times with timezone information
+- ⚠️ Overdue reminder indicators
+- 🆔 Reminder IDs for management
+
 ## Database Schema
 
-The bot uses two main tables:
+The bot uses three main tables:
 
 ### Users Table
 - `telegram_id`: Unique Telegram user ID
 - `username`: Telegram username
 - `first_name`: User's first name
 - `language_code`: User's language preference
+- `timezone`: User's timezone for reminder parsing (default: Asia/Tehran)
 - `is_bot`: Whether the user is a bot
 - `first_seen_at`: When user first interacted
 - `last_seen_at`: Last interaction timestamp
@@ -114,6 +149,15 @@ The bot uses two main tables:
 - `message_text`: Content of the message
 - `command`: Command used (if any)
 - `created_at`: Timestamp of interaction
+
+### Reminders Table
+- `telegram_id`: Reference to user
+- `task_description`: What to be reminded about
+- `scheduled_at`: When to send the reminder (UTC)
+- `timezone`: User's timezone for display
+- `is_active`: Whether reminder is still active
+- `is_sent`: Whether reminder has been delivered
+- `created_at`: When reminder was created
 
 ## Development
 

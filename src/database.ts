@@ -15,7 +15,7 @@ export async function upsertUser(db: D1Database, user: User): Promise<void> {
 		await db
 			.prepare(`
 				UPDATE users
-				SET username = ?, first_name = ?, last_name = ?, language_code = ?,
+				SET username = ?, first_name = ?, last_name = ?, language_code = ?, timezone = ?,
 					last_seen_at = ?, interaction_count = interaction_count + 1, updated_at = ?
 				WHERE telegram_id = ?
 			`)
@@ -24,6 +24,7 @@ export async function upsertUser(db: D1Database, user: User): Promise<void> {
 				user.first_name || null,
 				user.last_name || null,
 				user.language_code || null,
+				user.timezone || 'Asia/Tehran',
 				now,
 				now,
 				user.telegram_id
@@ -33,8 +34,8 @@ export async function upsertUser(db: D1Database, user: User): Promise<void> {
 		// Insert new user
 		await db
 			.prepare(`
-				INSERT INTO users (telegram_id, username, first_name, last_name, language_code, is_bot, first_seen_at, last_seen_at, interaction_count)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+				INSERT INTO users (telegram_id, username, first_name, last_name, language_code, is_bot, timezone, first_seen_at, last_seen_at, interaction_count)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
 			`)
 			.bind(
 				user.telegram_id,
@@ -43,6 +44,7 @@ export async function upsertUser(db: D1Database, user: User): Promise<void> {
 				user.last_name || null,
 				user.language_code || null,
 				user.is_bot || false,
+				user.timezone || 'Asia/Tehran',
 				now,
 				now
 			)

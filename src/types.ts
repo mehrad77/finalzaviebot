@@ -12,6 +12,7 @@ export interface User {
 	last_name?: string;
 	language_code?: string;
 	is_bot?: boolean;
+	timezone?: string;
 	first_seen_at?: string;
 	last_seen_at?: string;
 	interaction_count?: number;
@@ -23,4 +24,24 @@ export interface UserStats {
 	new_users_this_week: number;
 	active_users_today: number;
 	total_interactions: number;
+}
+
+export interface Reminder {
+	id?: number;
+	telegram_id: number;
+	task_description: string;
+	scheduled_at: string; // ISO string
+	timezone: string;
+	is_active: boolean;
+	is_sent: boolean;
+	created_at?: string;
+	updated_at?: string;
+}
+
+export interface ParsedReminderData {
+	task: string;
+	parsedDate: Date | null;
+	confidence: 'high' | 'medium' | 'low';
+	originalText: string;
+	isPastDate?: boolean;
 }

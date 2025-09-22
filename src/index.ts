@@ -5,8 +5,13 @@ import {
 	handleChatIdCommand,
 	handleStatsCommand,
 	handleReportCommand,
-	handleMessage
+	handleMessage,
+	handleRemindCommand,
+	handleRemindersCommand,
+	handleHelpCommand,
+	handleAdminCommand
 } from './handlers.js';
+import { handleScheduledEvent } from './scheduler.js';
 
 export default {
 	async fetch(request: Request, env: Environment, ctx: ExecutionContext): Promise<Response> {
@@ -17,9 +22,17 @@ export default {
 			.on('chatid', async (context) => handleChatIdCommand(context, env))
 			.on('stats', async (context) => handleStatsCommand(context, env))
 			.on('report', async (context) => handleReportCommand(context, env))
+			.on('remind', async (context) => handleRemindCommand(context, env))
+			.on('reminders', async (context) => handleRemindersCommand(context, env))
+			.on('help', async (context) => handleHelpCommand(context, env))
+			.on('admin', async (context) => handleAdminCommand(context, env))
 			.on('message', async (context) => handleMessage(context, env))
 			.handle(request.clone());
 
 		return new Response('yalan dunya!');
+	},
+
+	async scheduled(event: ScheduledEvent, env: Environment, ctx: ExecutionContext): Promise<void> {
+		await handleScheduledEvent(event, env, ctx);
 	},
 };
