@@ -11,13 +11,13 @@
 		"cf-typegen": "wrangler types"
 	},
 	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.5.28",
+		"@cloudflare/vitest-pool-workers": "^0.9.3",
 		"@cloudflare/workers-types": "^4.20241112.0",
 		"typescript": "^5.6.3",
-		"vitest": "2.1.5",
+		"vitest": "3.2.4",
 		"wrangler": "^4.38.0"
 	},
 	"dependencies": {
-		"@codebam/cf-workers-telegram-bot": "^7.27.0"
+		"@codebam/cf-workers-telegram-bot": "^9.1.3"
 	}
 }
