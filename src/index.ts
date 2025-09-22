@@ -3,7 +3,7 @@ import TelegramBot, { TelegramExecutionContext } from '@codebam/cf-workers-teleg
 interface Environment {
 	SECRET_TELEGRAM_API_TOKEN: string;
 	ADMIN_CHAT_ID: string;
-	BOT_DB: D1Database;
+	bot_users_db: D1Database;
 }
 
 interface User {
@@ -178,7 +178,7 @@ export default {
 
 							if (user) {
 								// Save/update user in database
-								await upsertUser(env.BOT_DB, {
+								await upsertUser(env.bot_users_db, {
 									telegram_id: user.id,
 									username: user.username,
 									first_name: user.first_name,
@@ -187,7 +187,7 @@ export default {
 								});
 
 								// Log interaction
-								await logInteraction(env.BOT_DB, user.id, 'start', message?.text, '/start');
+								await logInteraction(env.bot_users_db, user.id, 'start', message?.text, '/start');
 							}
 
 							await context.reply('yalan dunya!');
@@ -211,7 +211,7 @@ export default {
 
 					if (user) {
 						// Save/update user in database
-						await upsertUser(env.BOT_DB, {
+						await upsertUser(env.bot_users_db, {
 							telegram_id: user.id,
 							username: user.username,
 							first_name: user.first_name,
@@ -223,8 +223,8 @@ export default {
 						if (env.ADMIN_CHAT_ID && user.id.toString() === env.ADMIN_CHAT_ID) {
 							const text = message?.text?.toLowerCase();
 							if (text === '/stats' || text === '/report') {
-								const stats = await getUserStats(env.BOT_DB);
-								const topUsers = await getTopUsers(env.BOT_DB, 5);
+								const stats = await getUserStats(env.bot_users_db);
+								const topUsers = await getTopUsers(env.bot_users_db, 5);
 								const statsMessage = formatStatsMessage(stats, topUsers);
 								await context.reply(statsMessage);
 								return new Response('ok');
@@ -232,7 +232,7 @@ export default {
 						}
 
 						// Log interaction
-						await logInteraction(env.BOT_DB, user.id, 'message', message?.text);
+						await logInteraction(env.bot_users_db, user.id, 'message', message?.text);
 
 						// Regular bot response
 						await context.reply('yalan dunya!');
