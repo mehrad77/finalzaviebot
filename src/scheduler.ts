@@ -31,7 +31,7 @@ async function sendReminder(
 			body: JSON.stringify({
 				chat_id: telegramId,
 				text: message,
-				parse_mode: 'Markdown'
+				parse_mode: 'MarkdownV2'
 			})
 		});
 

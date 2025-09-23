@@ -36,7 +36,7 @@ export async function handleStartCommand(context: TelegramExecutionContext, env:
 					await logInteraction(env.bot_users_db, user.id, 'start', message?.text, '/start');
 				}
 
-				await context.reply(t('greetings.start'));
+				await context.reply(t('greetings.start'), 'MarkdownV2');
 				break;
 
 			default:
@@ -45,7 +45,7 @@ export async function handleStartCommand(context: TelegramExecutionContext, env:
 	} catch (error) {
 		console.error('Error handling start command:', error);
 		const errorMessage = t('errors.generic', { error: JSON.stringify(error, Object.getOwnPropertyNames(error)) });
-		await context.reply(errorMessage);
+		await context.reply(errorMessage, 'MarkdownV2');
 	}
 	return new Response('ok');
 }
@@ -69,12 +69,12 @@ export async function handleChatIdCommand(context: TelegramExecutionContext, env
 			// Log interaction for /chatid command
 			await logInteraction(env.bot_users_db, user.id, 'command', message?.text, '/chatid');
 
-			await context.reply(t('commands.chat_id', { userId: user.id.toString() }));
+			await context.reply(t('commands.chat_id', { userId: user.id.toString() }), 'MarkdownV2');
 		}
 	} catch (error) {
 		console.error('Error handling chatid command:', error);
 		const errorMessage = t('errors.generic', { error: JSON.stringify(error, Object.getOwnPropertyNames(error)) });
-		await context.reply(errorMessage);
+		await context.reply(errorMessage, 'MarkdownV2');
 	}
 	return new Response('ok');
 }
@@ -98,18 +98,18 @@ export async function handleStatsCommand(context: TelegramExecutionContext, env:
 			// Check if this is the admin requesting stats
 			if (isAdmin(user.id.toString(), env.ADMIN_CHAT_ID)) {
 				const statsMessage = await generateStatsReport(env.bot_users_db);
-				await context.reply(statsMessage);
+				await context.reply(statsMessage, 'MarkdownV2');
 
 				// Log interaction for /stats command
 				await logInteraction(env.bot_users_db, user.id, 'command', message?.text, '/stats');
 			} else {
-				await context.reply(t('errors.admin_only'));
+				await context.reply(t('errors.admin_only'), 'MarkdownV2');
 			}
 		}
 	} catch (error) {
 		console.error('Error handling stats command:', error);
 		const errorMessage = t('errors.generic', { error: JSON.stringify(error, Object.getOwnPropertyNames(error)) });
-		await context.reply(errorMessage);
+		await context.reply(errorMessage, 'MarkdownV2');
 	}
 	return new Response('ok');
 }
@@ -133,18 +133,18 @@ export async function handleReportCommand(context: TelegramExecutionContext, env
 			// Check if this is the admin requesting report
 			if (isAdmin(user.id.toString(), env.ADMIN_CHAT_ID)) {
 				const statsMessage = await generateStatsReport(env.bot_users_db);
-				await context.reply(statsMessage);
+				await context.reply(statsMessage, 'MarkdownV2');
 
 				// Log interaction for /report command
 				await logInteraction(env.bot_users_db, user.id, 'command', message?.text, '/report');
 			} else {
-				await context.reply(t('errors.admin_only'));
+				await context.reply(t('errors.admin_only'), 'MarkdownV2');
 			}
 		}
 	} catch (error) {
 		console.error('Error handling report command:', error);
 		const errorMessage = t('errors.generic', { error: JSON.stringify(error, Object.getOwnPropertyNames(error)) });
-		await context.reply(errorMessage);
+		await context.reply(errorMessage, 'MarkdownV2');
 	}
 	return new Response('ok');
 }
@@ -171,13 +171,13 @@ export async function handleMessage(context: TelegramExecutionContext, env: Envi
 			// Regular bot response (only for non-command messages)
 			const text = message?.text?.toLowerCase();
 			if (!text?.startsWith('/')) {
-				await context.reply(t('greetings.default_message'));
+				await context.reply(t('greetings.default_message'), 'MarkdownV2');
 			}
 		}
 	} catch (error) {
 		console.error('Error handling message:', error);
 		const errorMessage = t('errors.generic', { error: JSON.stringify(error, Object.getOwnPropertyNames(error)) });
-		await context.reply(errorMessage);
+		await context.reply(errorMessage, 'MarkdownV2');
 	}
 	return new Response('ok');
 }
@@ -212,14 +212,14 @@ export async function handleRemindCommand(context: TelegramExecutionContext, env
 		const parsed = parseReminderText(text, userTimezone);
 
 		if (!parsed) {
-			await context.reply(t('reminders.parsing_failed'));
+			await context.reply(t('reminders.parsing_failed'), 'MarkdownV2');
 			return new Response('ok');
 		}
 
 		// Check if the parsed date is in the past
 		const now = new Date();
 		if (parsed.scheduledAt <= now) {
-			await context.reply(t('reminders.past_date'));
+			await context.reply(t('reminders.past_date'), 'MarkdownV2');
 			return new Response('ok');
 		}
 
@@ -235,7 +235,7 @@ export async function handleRemindCommand(context: TelegramExecutionContext, env
 
 		confirmationMessage += t('reminders.confirmation_prompt');
 
-		await context.reply(confirmationMessage);
+		await context.reply(confirmationMessage, 'MarkdownV2');
 
 		// Store the parsed reminder temporarily in context for confirmation
 		// Since we can't easily store state, we'll store it in the database with a special flag
@@ -257,13 +257,13 @@ export async function handleRemindCommand(context: TelegramExecutionContext, env
 				.bind(parsed.task, tempReminderId)
 				.run();
 
-			await context.reply(t('reminders.created_successfully'));
+			await context.reply(t('reminders.created_successfully'), 'MarkdownV2');
 		}
 
 	} catch (error) {
 		console.error('Error handling remind command:', error);
 		const errorMessage = error instanceof Error ? error.message : t('errors.unknown_error');
-		await context.reply(t('errors.reminder_creation_failed', { error: errorMessage }));
+		await context.reply(t('errors.reminder_creation_failed', { error: errorMessage }), 'MarkdownV2');
 	}
 	return new Response('ok');
 }
@@ -298,29 +298,29 @@ export async function handleRemindersCommand(context: TelegramExecutionContext, 
 			// List all reminders
 			const reminders = await getUserReminders(env.bot_users_db, user.id);
 			const formattedList = formatRemindersList(reminders);
-			await context.reply(formattedList);
+			await context.reply(formattedList, 'MarkdownV2');
 		} else if (args[0] === 'delete' && args[1]) {
 			// Delete specific reminder
 			const reminderId = parseInt(args[1]);
 			if (isNaN(reminderId)) {
-				await context.reply(t('errors.invalid_reminder_id', { example: '123' }));
+				await context.reply(t('errors.invalid_reminder_id', { example: '123' }), 'MarkdownV2');
 				return new Response('ok');
 			}
 
 			const success = await deleteReminder(env.bot_users_db, reminderId, user.id);
 			if (success) {
-				await context.reply(t('reminders.deleted_successfully', { reminderId: reminderId.toString() }));
+				await context.reply(t('reminders.deleted_successfully', { reminderId: reminderId.toString() }), 'MarkdownV2');
 			} else {
-				await context.reply(t('errors.reminder_delete_failed', { reminderId: reminderId.toString() }));
+				await context.reply(t('errors.reminder_delete_failed', { reminderId: reminderId.toString() }), 'MarkdownV2');
 			}
 		} else {
-			await context.reply(t('reminders_commands.title') + t('reminders_commands.commands'));
+			await context.reply(t('reminders_commands.title') + t('reminders_commands.commands'), 'MarkdownV2');
 		}
 
 	} catch (error) {
 		console.error('Error handling reminders command:', error);
 		const errorMessage = error instanceof Error ? error.message : t('errors.unknown_error');
-		await context.reply(t('errors.generic', { error: errorMessage }));
+		await context.reply(t('errors.generic', { error: errorMessage }), 'MarkdownV2');
 	}
 	return new Response('ok');
 }
@@ -358,12 +358,12 @@ export async function handleHelpCommand(context: TelegramExecutionContext, env: 
 			t('help.tips_title') +
 			t('help.tips');
 
-		await context.reply(helpMessage);
+		await context.reply(helpMessage, 'MarkdownV2');
 
 	} catch (error) {
 		console.error('Error handling help command:', error);
 		const errorMessage = error instanceof Error ? error.message : t('errors.unknown_error');
-		await context.reply(t('errors.generic', { error: errorMessage }));
+		await context.reply(t('errors.generic', { error: errorMessage }), 'MarkdownV2');
 	}
 	return new Response('ok');
 }
@@ -390,7 +390,7 @@ export async function handleAdminCommand(context: TelegramExecutionContext, env:
 
 		// Check if user is admin
 		if (!isAdmin(user.id.toString(), env.ADMIN_CHAT_ID)) {
-			await context.reply(t('errors.admin_only'));
+			await context.reply(t('errors.admin_only'), 'MarkdownV2');
 			return new Response('ok');
 		}
 
@@ -401,31 +401,31 @@ export async function handleAdminCommand(context: TelegramExecutionContext, env:
 		const args = text.split(' ').slice(1); // Remove '/admin'
 
 		if (args.length === 0) {
-			await context.reply(t('admin.commands_title') + t('admin.commands_list'));
+			await context.reply(t('admin.commands_title') + t('admin.commands_list'), 'MarkdownV2');
 		} else if (args[0] === 'reminders') {
 			if (args[1]) {
 				// Show reminders for specific user
 				const userId = parseInt(args[1]);
 				if (isNaN(userId)) {
-					await context.reply(t('errors.invalid_user_id', { example: '123456789' }));
+					await context.reply(t('errors.invalid_user_id', { example: '123456789' }), 'MarkdownV2');
 					return new Response('ok');
 				}
 
 				const remindersView = await getAdminRemindersView(env.bot_users_db, userId);
-				await context.reply(remindersView);
+				await context.reply(remindersView, 'MarkdownV2');
 			} else {
 				// Show all reminders
 				const remindersView = await getAdminRemindersView(env.bot_users_db);
-				await context.reply(remindersView);
+				await context.reply(remindersView, 'MarkdownV2');
 			}
 		} else {
-			await context.reply(t('errors.unknown_admin_command'));
+			await context.reply(t('errors.unknown_admin_command'), 'MarkdownV2');
 		}
 
 	} catch (error) {
 		console.error('Error handling admin command:', error);
 		const errorMessage = error instanceof Error ? error.message : t('errors.unknown_error');
-		await context.reply(t('errors.generic', { error: errorMessage }));
+		await context.reply(t('errors.generic', { error: errorMessage }), 'MarkdownV2');
 	}
 	return new Response('ok');
 }
