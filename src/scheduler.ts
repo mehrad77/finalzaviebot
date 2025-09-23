@@ -1,5 +1,5 @@
 import { Environment } from './types.js';
-import { getDueReminders, markReminderAsSent, formatDateForUser } from './reminder-utils.js';
+import { getDueReminders, markReminderAsSent, formatDateForUser, createNextRecurrence } from './reminder-utils.js';
 import { t } from './i18n.js';
 
 /**
@@ -48,12 +48,13 @@ async function sendReminder(
 }
 
 /**
- * Process due reminders
+ * Process due reminders (updated to handle recurring reminders)
  * This function should be called by a scheduled worker or cron job
  */
-export async function processDueReminders(env: Environment): Promise<{ sent: number; failed: number }> {
+export async function processDueReminders(env: Environment): Promise<{ sent: number; failed: number; recurringCreated: number }> {
 	let sent = 0;
 	let failed = 0;
+	let recurringCreated = 0;
 
 	try {
 		// Get all reminders that are due
@@ -77,6 +78,21 @@ export async function processDueReminders(env: Environment): Promise<{ sent: num
 					await markReminderAsSent(env.bot_users_db, reminder.id!);
 					sent++;
 					console.log(`Sent reminder ${reminder.id} to user ${reminder.telegram_id}`);
+
+					// If this is a recurring reminder, create next occurrence
+					if (reminder.is_recurring && reminder.recurrence_pattern) {
+						try {
+							const nextReminderId = await createNextRecurrence(env.bot_users_db, reminder);
+							if (nextReminderId) {
+								recurringCreated++;
+								console.log(`Created next occurrence ${nextReminderId} for recurring reminder ${reminder.id}`);
+							} else {
+								console.log(`Recurring reminder ${reminder.id} has reached its limit or end date`);
+							}
+						} catch (error) {
+							console.error(`Error creating next occurrence for reminder ${reminder.id}:`, error);
+						}
+					}
 				} else {
 					failed++;
 					console.error(`Failed to send reminder ${reminder.id} to user ${reminder.telegram_id}`);
@@ -91,11 +107,11 @@ export async function processDueReminders(env: Environment): Promise<{ sent: num
 		console.error('Error in processDueReminders:', error);
 	}
 
-	return { sent, failed };
+	return { sent, failed, recurringCreated };
 }
 
 /**
- * Scheduled event handler for Cloudflare Workers
+ * Scheduled event handler for Cloudflare Workers (updated for recurring reminders)
  * This will be triggered by a cron trigger
  */
 export async function handleScheduledEvent(
@@ -106,7 +122,7 @@ export async function handleScheduledEvent(
 	try {
 		console.log('Processing scheduled reminders...');
 		const result = await processDueReminders(env);
-		console.log(`Reminder processing complete. Sent: ${result.sent}, Failed: ${result.failed}`);
+		console.log(`Reminder processing complete. Sent: ${result.sent}, Failed: ${result.failed}, Recurring Created: ${result.recurringCreated}`);
 	} catch (error) {
 		console.error('Error in scheduled event handler:', error);
 	}

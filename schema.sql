@@ -34,9 +34,18 @@ CREATE TABLE IF NOT EXISTS reminders (
     timezone TEXT DEFAULT 'Asia/Tehran',
     is_active BOOLEAN DEFAULT TRUE,
     is_sent BOOLEAN DEFAULT FALSE,
+    -- Recurring reminder fields
+    is_recurring BOOLEAN DEFAULT FALSE,
+    recurrence_pattern TEXT, -- JSON: {"type": "interval", "value": 3, "unit": "hours"}
+    parent_reminder_id INTEGER, -- For tracking recurring instances
+    last_occurrence_at DATETIME, -- Track when last occurrence was sent
+    max_occurrences INTEGER, -- Optional limit on total occurrences
+    occurrence_count INTEGER DEFAULT 0, -- Track how many times it has occurred
+    recurrence_end_date DATETIME, -- Optional end date for recurring reminders
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (telegram_id) REFERENCES users (telegram_id)
+    FOREIGN KEY (telegram_id) REFERENCES users (telegram_id),
+    FOREIGN KEY (parent_reminder_id) REFERENCES reminders (id)
 );
 
 -- Add timezone column to users table for personalized parsing
@@ -51,3 +60,5 @@ CREATE INDEX IF NOT EXISTS idx_reminders_telegram_id ON reminders (telegram_id);
 CREATE INDEX IF NOT EXISTS idx_reminders_scheduled_at ON reminders (scheduled_at);
 CREATE INDEX IF NOT EXISTS idx_reminders_active_sent ON reminders (is_active, is_sent);
 CREATE INDEX IF NOT EXISTS idx_reminders_due ON reminders (scheduled_at, is_active, is_sent);
+CREATE INDEX IF NOT EXISTS idx_reminders_recurring ON reminders (is_recurring, is_active);
+CREATE INDEX IF NOT EXISTS idx_reminders_parent ON reminders (parent_reminder_id);

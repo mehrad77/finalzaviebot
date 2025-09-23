@@ -1,6 +1,6 @@
 # Telegram Bot with User Analytics & Natural Language Reminders
 
-This is a Telegram bot built with Cloudflare Workers and D1 database that tracks user interactions, provides analytics for administrators, and offers a powerful natural language reminder system.
+This is a Telegram bot built with Cloudflare Workers and D1 database that tracks user interactions, provides analytics for administrators, and offers a powerful natural language reminder system with support for **recurring reminders**.
 
 ## Features
 
@@ -8,8 +8,9 @@ This is a Telegram bot built with Cloudflare Workers and D1 database that tracks
 - **Admin Reports**: Provides detailed statistics for administrators
 - **User Analytics**: Tracks interaction counts, first/last seen dates, and user information
 - **Natural Language Reminders**: Set, manage, and receive reminders using natural language
+- **Recurring Reminders**: Set reminders that repeat automatically (hourly, daily, weekly, etc.)
 - **Database Storage**: Uses Cloudflare D1 for persistent data storage
-- **Scheduled Processing**: Automatic reminder delivery via cron jobs
+- **Scheduled Processing**: Automatic reminder delivery and recurring reminder creation via cron jobs
 
 ## Setup
 
@@ -83,21 +84,60 @@ To find your Telegram user ID:
 #### Reminder Commands
 
 - `/remind me to <task> <time>` - Create a new reminder using natural language
-  - Examples:
+  - **One-time reminders:**
     - `/remind me to call mom tomorrow at 7pm`
     - `/remind me to submit the report Friday at 2pm`
     - `/remind me to water plants this evening`
     - `/remind me to renew license on March 15th`
     - `/remind me to check status in 2 weeks`
 
-- `/reminders` - View all your active reminders
-- `/reminders delete <id>` - Delete a specific reminder
+  - **Recurring reminders:**
+    - `/remind me to drink water every 3 hours`
+    - `/remind me to check emails every day at 9am`
+    - `/remind me to backup files weekly`
+    - `/remind me to take medication every 6 hours`
+    - `/remind me to stretch every 30 minutes`
+    - `/remind me to water plants daily`
+    - `/remind me to review goals monthly`
 
-The bot understands natural language date/time expressions and will:
-1. Parse your request and extract the task and timing
-2. Ask for confirmation if the timing looks correct
-3. Send you a reminder at the specified time
-4. Handle timezone conversion (default: Asia/Tehran)
+- `/reminders` - View all your active reminders (both one-time and recurring)
+- `/reminders delete <id>` - Delete a specific one-time reminder
+- `/reminders stop <id>` - Stop a recurring reminder and all future occurrences
+
+The bot understands natural language date/time expressions and recurring patterns:
+1. **Recurring patterns:** "every X hours/minutes/days/weeks/months", "daily", "weekly", "hourly", "monthly"
+2. Parse your request and extract the task, timing, and recurrence
+3. Ask for confirmation if the timing looks correct
+4. Send you reminders at the specified intervals
+5. Automatically create the next occurrence after each reminder is sent
+6. Handle timezone conversion (default: Asia/Tehran)
+
+#### Recurring Reminders
+
+The bot supports powerful recurring reminders with these features:
+
+**Supported Patterns:**
+- `every X minutes/hours/days/weeks/months` (e.g., "every 30 minutes", "every 2 days")
+- `daily`, `hourly`, `weekly`, `monthly` (shorthand for "every 1 day/hour/week/month")
+
+**Examples:**
+- Health & Wellness: `/remind me to drink water every 2 hours`
+- Work & Productivity: `/remind me to take a break every 90 minutes`
+- Daily Routines: `/remind me to check emails daily at 9am`
+- Weekly Tasks: `/remind me to backup files every Sunday`
+- Medication: `/remind me to take vitamins every day at 8am`
+
+**How Recurring Reminders Work:**
+1. After sending each reminder, the bot automatically creates the next occurrence
+2. Recurring reminders continue indefinitely until you stop them
+3. Use `/reminders stop <id>` to stop a recurring reminder and all future occurrences
+4. The bot tracks how many times each recurring reminder has been sent
+5. You can view all active recurring reminders with `/reminders`
+
+**Managing Recurring Reminders:**
+- View with indicators: Recurring reminders show 🔄 and pattern info (e.g., "every 3 hours [5 times]")
+- Stop individual recurring reminders: `/reminders stop 123`
+- Admin view: Admins can see all recurring reminders across users
 
 ### For Administrators
 
@@ -157,6 +197,13 @@ The bot uses three main tables:
 - `timezone`: User's timezone for display
 - `is_active`: Whether reminder is still active
 - `is_sent`: Whether reminder has been delivered
+- `is_recurring`: Whether this is a recurring reminder
+- `recurrence_pattern`: JSON pattern for recurring reminders (e.g., `{"type": "interval", "value": 3, "unit": "hours"}`)
+- `parent_reminder_id`: Links recurring instances to their parent reminder
+- `last_occurrence_at`: When the last occurrence was sent (for recurring reminders)
+- `max_occurrences`: Optional limit on total occurrences
+- `occurrence_count`: How many times this recurring reminder has been sent
+- `recurrence_end_date`: Optional end date for recurring reminders
 - `created_at`: When reminder was created
 
 ## Development

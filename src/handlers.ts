@@ -11,7 +11,8 @@ import {
 	getUserTimezone,
 	formatRemindersList,
 	formatDateForUser,
-	getAdminRemindersView
+	getAdminRemindersView,
+	stopRecurringReminder
 } from './reminder-utils.js';
 
 export async function handleStartCommand(context: TelegramExecutionContext, env: Environment): Promise<Response> {
@@ -216,9 +217,9 @@ export async function handleRemindCommand(context: TelegramExecutionContext, env
 			return new Response('ok');
 		}
 
-		// Check if the parsed date is in the past
+		// Check if the parsed date is in the past for non-recurring reminders
 		const now = new Date();
-		if (parsed.scheduledAt <= now) {
+		if (!parsed.isRecurring && parsed.scheduledAt <= now) {
 			await context.reply(t('reminders.past_date'), 'MarkdownV2');
 			return new Response('ok');
 		}
@@ -226,8 +227,18 @@ export async function handleRemindCommand(context: TelegramExecutionContext, env
 		// Format the date for confirmation
 		const formattedDate = formatDateForUser(parsed.scheduledAt, userTimezone);
 
-		// Generate confirmation message based on confidence level
-		let confirmationMessage = t('reminders.confirmation', { task: parsed.task, date: formattedDate });
+		// Generate confirmation message based on confidence level and recurring status
+		let confirmationMessage = '';
+
+		if (parsed.isRecurring && parsed.recurrencePattern) {
+			confirmationMessage = t('reminders.recurring_confirmation', {
+				task: parsed.task,
+				firstDate: formattedDate,
+				interval: `${parsed.recurrencePattern.value} ${parsed.recurrencePattern.unit}`
+			});
+		} else {
+			confirmationMessage = t('reminders.confirmation', { task: parsed.task, date: formattedDate });
+		}
 
 		if (parsed.confidence === 'low') {
 			confirmationMessage += t('reminders.low_confidence_warning');
@@ -237,19 +248,29 @@ export async function handleRemindCommand(context: TelegramExecutionContext, env
 
 		await context.reply(confirmationMessage, 'MarkdownV2');
 
-		// Store the parsed reminder temporarily in context for confirmation
-		// Since we can't easily store state, we'll store it in the database with a special flag
-		// and clean it up later
-		const tempReminderId = await createReminder(
-			env.bot_users_db,
-			user.id,
-			`TEMP:${parsed.task}`,
-			parsed.scheduledAt,
-			userTimezone
-		);
+		// Create the reminder
+		let tempReminderId;
+		if (parsed.isRecurring && parsed.recurrencePattern) {
+			tempReminderId = await createReminder(
+				env.bot_users_db,
+				user.id,
+				`TEMP:${parsed.task}`,
+				parsed.scheduledAt,
+				userTimezone,
+				true,
+				parsed.recurrencePattern
+			);
+		} else {
+			tempReminderId = await createReminder(
+				env.bot_users_db,
+				user.id,
+				`TEMP:${parsed.task}`,
+				parsed.scheduledAt,
+				userTimezone
+			);
+		}
 
-		// We'll need to implement a confirmation handler separately
-		// For now, let's auto-confirm if confidence is high
+		// Auto-confirm if confidence is high, otherwise require user confirmation
 		if (parsed.confidence === 'high') {
 			// Update the temp reminder to be active
 			await env.bot_users_db
@@ -257,7 +278,16 @@ export async function handleRemindCommand(context: TelegramExecutionContext, env
 				.bind(parsed.task, tempReminderId)
 				.run();
 
-			await context.reply(t('reminders.created_successfully'), 'MarkdownV2');
+			let successMessage = '';
+			if (parsed.isRecurring && parsed.recurrencePattern) {
+				successMessage = t('reminders.recurring_created_successfully', {
+					interval: `${parsed.recurrencePattern.value} ${parsed.recurrencePattern.unit}`
+				});
+			} else {
+				successMessage = t('reminders.created_successfully');
+			}
+
+			await context.reply(successMessage, 'MarkdownV2');
 		}
 
 	} catch (error) {
@@ -307,9 +337,41 @@ export async function handleRemindersCommand(context: TelegramExecutionContext, 
 				return new Response('ok');
 			}
 
-			const success = await deleteReminder(env.bot_users_db, reminderId, user.id);
+			// Check if this is a recurring reminder
+			const reminderCheck = await env.bot_users_db
+				.prepare('SELECT is_recurring FROM reminders WHERE id = ? AND telegram_id = ?')
+				.bind(reminderId, user.id)
+				.first() as { is_recurring: boolean } | null;
+
+			let success = false;
+			if (reminderCheck?.is_recurring) {
+				// For recurring reminders, stop all future occurrences
+				success = await stopRecurringReminder(env.bot_users_db, reminderId, user.id);
+				if (success) {
+					await context.reply(t('reminders.recurring_stopped_successfully', { reminderId: reminderId.toString() }), 'MarkdownV2');
+				} else {
+					await context.reply(t('errors.reminder_delete_failed', { reminderId: reminderId.toString() }), 'MarkdownV2');
+				}
+			} else {
+				// For regular reminders, delete normally
+				success = await deleteReminder(env.bot_users_db, reminderId, user.id);
+				if (success) {
+					await context.reply(t('reminders.deleted_successfully', { reminderId: reminderId.toString() }), 'MarkdownV2');
+				} else {
+					await context.reply(t('errors.reminder_delete_failed', { reminderId: reminderId.toString() }), 'MarkdownV2');
+				}
+			}
+		} else if (args[0] === 'stop' && args[1]) {
+			// Stop recurring reminder (alias for delete for recurring reminders)
+			const reminderId = parseInt(args[1]);
+			if (isNaN(reminderId)) {
+				await context.reply(t('errors.invalid_reminder_id', { example: '123' }), 'MarkdownV2');
+				return new Response('ok');
+			}
+
+			const success = await stopRecurringReminder(env.bot_users_db, reminderId, user.id);
 			if (success) {
-				await context.reply(t('reminders.deleted_successfully', { reminderId: reminderId.toString() }), 'MarkdownV2');
+				await context.reply(t('reminders.recurring_stopped_successfully', { reminderId: reminderId.toString() }), 'MarkdownV2');
 			} else {
 				await context.reply(t('errors.reminder_delete_failed', { reminderId: reminderId.toString() }), 'MarkdownV2');
 			}

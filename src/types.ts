@@ -34,8 +34,22 @@ export interface Reminder {
 	timezone: string;
 	is_active: boolean;
 	is_sent: boolean;
+	// Recurring reminder fields
+	is_recurring: boolean;
+	recurrence_pattern?: string; // JSON string
+	parent_reminder_id?: number;
+	last_occurrence_at?: string;
+	max_occurrences?: number;
+	occurrence_count?: number;
+	recurrence_end_date?: string;
 	created_at?: string;
 	updated_at?: string;
+}
+
+export interface RecurrencePattern {
+	type: 'interval';
+	value: number;
+	unit: 'minutes' | 'hours' | 'days' | 'weeks' | 'months';
 }
 
 export interface ParsedReminderData {
@@ -44,4 +58,7 @@ export interface ParsedReminderData {
 	confidence: 'high' | 'medium' | 'low';
 	originalText: string;
 	isPastDate?: boolean;
+	// Recurring reminder data
+	isRecurring?: boolean;
+	recurrencePattern?: RecurrencePattern;
 }
