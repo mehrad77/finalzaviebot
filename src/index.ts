@@ -27,7 +27,7 @@ export default {
 			.on('reminders', async (context) => handleRemindersCommand(context, env))
 			.on('help', async (context) => handleHelpCommand(context, env))
 			.on('admin', async (context) => handleAdminCommand(context, env))
-			.on('message', async (context) => handleMessage(context, env))
+			.on(':message', async (context) => handleMessage(context, env))
 			.handle(request.clone());
 
 		return new Response(t('greetings.default_message'));
