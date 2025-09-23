@@ -1,19 +1,24 @@
 import { UserStats } from './types.js';
 import { getUserStats, getTopUsers } from './database.js';
+import { t } from './i18n.js';
 
 export function formatStatsMessage(stats: UserStats, topUsers: any[]): string {
-	let message = `📊 *Bot Statistics*\n\n`;
-	message += `👥 Total Users: ${stats.total_users}\n`;
-	message += `🆕 New Users Today: ${stats.new_users_today}\n`;
-	message += `📅 New Users This Week: ${stats.new_users_this_week}\n`;
-	message += `🟢 Active Users Today: ${stats.active_users_today}\n`;
-	message += `💬 Total Interactions: ${stats.total_interactions}\n\n`;
+	let message = t('admin.stats_title');
+	message += t('admin.total_users', { count: stats.total_users });
+	message += t('admin.new_users_today', { count: stats.new_users_today });
+	message += t('admin.new_users_week', { count: stats.new_users_this_week });
+	message += t('admin.active_users_today', { count: stats.active_users_today });
+	message += t('admin.total_interactions', { count: stats.total_interactions });
 
 	if (topUsers.length > 0) {
-		message += `🏆 *Top Users by Interactions:*\n`;
+		message += t('admin.top_users_title');
 		topUsers.forEach((user, index) => {
 			const name = user.first_name || user.username || `User ${user.telegram_id}`;
-			message += `${index + 1}. ${name}: ${user.interaction_count} interactions\n`;
+			message += t('admin.top_user_item', {
+				index: index + 1,
+				name: name,
+				count: user.interaction_count
+			});
 		});
 	}
 

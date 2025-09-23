@@ -1,0 +1,72 @@
+{
+  "greetings": {
+    "start": "yalan dunya!",
+    "default_message": "yalan dunya!"
+  },
+
+  "commands": {
+    "chat_id": "Your chat ID is: `{userId}`"
+  },
+
+  "errors": {
+    "generic": "Sorry, something went wrong: {error}",
+    "admin_only": "Sorry, this command is only available to administrators.",
+    "reminder_creation_failed": "Sorry, something went wrong while creating your reminder: {error}",
+    "unknown_error": "Unknown error occurred",
+    "invalid_reminder_id": "❌ Please provide a valid reminder ID number.\n\nExample: `/reminders delete {example}`",
+    "invalid_user_id": "❌ Please provide a valid user ID number.\n\nExample: `/admin reminders {example}`",
+    "unknown_admin_command": "❌ Unknown admin command. Use `/admin` to see available commands.",
+    "reminder_delete_failed": "❌ Could not delete reminder #{reminderId}. Make sure the ID is correct and belongs to you."
+  },
+
+  "reminders": {
+    "parsing_failed": "🤔 I wasn't sure when you want the reminder. Can you specify the exact time or date?\n\nExamples:\n• `/remind me to call mom tomorrow at 7pm`\n• `/remind me to submit the report Friday at 2pm`\n• `/remind me to water plants this evening`",
+    "past_date": "⚠️ It looks like that time is in the past. Did you mean to schedule a **future** reminder?\n\nPlease specify a time in the future, like:\n• `tomorrow at 7pm`\n• `next Friday at 2pm`\n• `in 2 hours`",
+    "confirmation": "Got it! I'll remind you to **{task}** on **{date}**.",
+    "low_confidence_warning": "\n\n⚠️ I'm not completely sure about the timing. Please double-check if this looks correct.",
+    "confirmation_prompt": "\n\nReply with **yes** or **y** to confirm, or **no** to cancel.",
+    "created_successfully": "✅ Reminder created successfully!",
+    "deleted_successfully": "✅ Reminder #{reminderId} has been deleted.",
+    "no_active_reminders": "📅 You have no active reminders.",
+    "active_reminders_title": "📅 Your Active Reminders ({count}):\n\n",
+    "reminder_item": "{index}. **{task}**\n   📅 {date}{overdue}\n   🆔 ID: `{id}`\n\n",
+    "overdue_marker": " ⚠️ (Overdue)",
+    "delete_instructions": "💡 Use `/reminders delete <id>` to delete a reminder.",
+    "notification_message": "⏰ **Reminder**\n\n{task}\n\n📅 Originally scheduled for: {originalTime}"
+  },
+
+  "admin": {
+    "stats_title": "📊 *Bot Statistics*\n\n",
+    "total_users": "👥 Total Users: {count}\n",
+    "new_users_today": "🆕 New Users Today: {count}\n",
+    "new_users_week": "📅 New Users This Week: {count}\n",
+    "active_users_today": "🟢 Active Users Today: {count}\n",
+    "total_interactions": "💬 Total Interactions: {count}\n\n",
+    "top_users_title": "🏆 *Top Users by Interactions:*\n",
+    "top_user_item": "{index}. {name}: {count} interactions\n",
+    "commands_title": "🛠️ **Admin Commands:**\n\n",
+    "commands_list": "• `/admin reminders` - View all active reminders\n• `/admin reminders <user_id>` - View reminders for specific user\n\nOther admin commands:\n• `/stats` or `/report` - Bot statistics",
+    "reminders_view_all": "🔧 **Admin View: All Active Reminders ({count})**\n\n",
+    "reminders_view_user": "🔧 **Admin View: Reminders for User {userId}**\n\n",
+    "no_reminders_admin": "📅 No active reminders found.",
+    "admin_reminder_item": "{index}. **{task}**\n   👤 User: {userName} ({userId})\n   📅 {date}{overdue}\n   🆔 ID: `{id}`\n\n"
+  },
+
+  "help": {
+    "title": "🤖 **I'm your Reminder Bot!** You can ask me to remind you about things in natural language.\n\n",
+    "examples_title": "✅ **Try:**\n",
+    "examples": "• `/remind me to call dad tomorrow at 6pm`\n• `/remind me to check the status 2 weeks from now`\n• `/remind me to water the plants this Friday at 9am`\n• `/remind me to submit the report next Monday`\n\n",
+    "parsing_info": "📅 I'll parse the time, confirm with you, and remind you at the right moment!\n\n",
+    "other_commands_title": "🔧 **Other commands:**\n",
+    "other_commands": "• `/reminders` - View your active reminders\n• `/reminders delete <ID>` - Delete a specific reminder\n• `/chatid` - Get your Telegram chat ID\n• `/help` - Show this help message\n\n",
+    "admin_commands_title": "🛠️ **Admin commands:**\n",
+    "admin_commands": "• `/stats` or `/report` - Bot statistics\n• `/admin reminders` - View all reminders\n• `/admin reminders <user_id>` - View user's reminders\n\n",
+    "tips_title": "💡 **Tips:**\n",
+    "tips": "• I understand natural language - just tell me when you want to be reminded!\n• All times are in your timezone (default: Asia/Tehran)\n• I'll ask for confirmation if I'm not sure about the timing"
+  },
+
+  "reminders_commands": {
+    "title": "🔧 **Reminders Commands:**\n\n",
+    "commands": "• `/reminders` - View all your active reminders\n• `/reminders delete <id>` - Delete a specific reminder\n\nExample: `/reminders delete 123`"
+  }
+}

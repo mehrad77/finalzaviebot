@@ -1,5 +1,6 @@
 import * as chrono from 'chrono-node';
 import { Environment, Reminder } from './types.js';
+import { t } from './i18n.js';
 
 /**
  * Parse natural language text for reminder creation
@@ -200,22 +201,26 @@ export async function getUserTimezone(db: D1Database, telegramId: number): Promi
  */
 export function formatRemindersList(reminders: Reminder[]): string {
 	if (reminders.length === 0) {
-		return '📅 You have no active reminders.';
+		return t('reminders.no_active_reminders');
 	}
 
-	let message = `📅 Your Active Reminders (${reminders.length}):\n\n`;
+	let message = t('reminders.active_reminders_title', { count: reminders.length });
 
 	reminders.forEach((reminder, index) => {
 		const scheduledDate = new Date(reminder.scheduled_at);
 		const formattedDate = formatDateForUser(scheduledDate, reminder.timezone);
 		const isOverdue = scheduledDate < new Date();
 
-		message += `${index + 1}. **${reminder.task_description}**\n`;
-		message += `   📅 ${formattedDate}${isOverdue ? ' ⚠️ (Overdue)' : ''}\n`;
-		message += `   🆔 ID: \`${reminder.id}\`\n\n`;
+		message += t('reminders.reminder_item', {
+			index: index + 1,
+			task: reminder.task_description,
+			date: formattedDate,
+			overdue: isOverdue ? t('reminders.overdue_marker') : '',
+			id: reminder.id?.toString() || ''
+		});
 	});
 
-	message += '💡 Use `/reminders delete <id>` to delete a reminder.';
+	message += t('reminders.delete_instructions');
 
 	return message;
 }
@@ -244,14 +249,12 @@ export async function getAdminRemindersView(db: D1Database, specificUserId?: num
 	const reminders = result.results as unknown as (Reminder & { username?: string; first_name?: string })[];
 
 	if (reminders.length === 0) {
-		return specificUserId
-			? `🔍 No active reminders found for user ID ${specificUserId}.`
-			: '🔍 No active reminders found in the system.';
+		return t('admin.no_reminders_admin');
 	}
 
 	let message = specificUserId
-		? `🔧 **Admin View: Reminders for User ${specificUserId}**\n\n`
-		: `🔧 **Admin View: All Active Reminders (${reminders.length})**\n\n`;
+		? t('admin.reminders_view_user', { userId: specificUserId })
+		: t('admin.reminders_view_all', { count: reminders.length });
 
 	reminders.forEach((reminder, index) => {
 		const scheduledDate = new Date(reminder.scheduled_at);
@@ -259,10 +262,15 @@ export async function getAdminRemindersView(db: D1Database, specificUserId?: num
 		const isOverdue = scheduledDate < new Date();
 		const userName = reminder.first_name || reminder.username || 'Unknown';
 
-		message += `${index + 1}. **${reminder.task_description}**\n`;
-		message += `   👤 User: ${userName} (${reminder.telegram_id})\n`;
-		message += `   📅 ${formattedDate}${isOverdue ? ' ⚠️ (Overdue)' : ''}\n`;
-		message += `   🆔 ID: \`${reminder.id}\`\n\n`;
+		message += t('admin.admin_reminder_item', {
+			index: index + 1,
+			task: reminder.task_description,
+			userName: userName,
+			userId: reminder.telegram_id,
+			date: formattedDate,
+			overdue: isOverdue ? t('reminders.overdue_marker') : '',
+			id: reminder.id?.toString() || ''
+		});
 	});
 
 	return message;

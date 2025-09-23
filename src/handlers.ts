@@ -2,6 +2,7 @@ import { TelegramExecutionContext } from '@codebam/cf-workers-telegram-bot';
 import { Environment } from './types.js';
 import { upsertUser, logInteraction } from './database.js';
 import { isAdmin, generateStatsReport } from './admin.js';
+import { t } from './i18n.js';
 import {
 	parseReminderText,
 	createReminder,
@@ -35,7 +36,7 @@ export async function handleStartCommand(context: TelegramExecutionContext, env:
 					await logInteraction(env.bot_users_db, user.id, 'start', message?.text, '/start');
 				}
 
-				await context.reply('yalan dunya!');
+				await context.reply(t('greetings.start'));
 				break;
 
 			default:
@@ -43,7 +44,7 @@ export async function handleStartCommand(context: TelegramExecutionContext, env:
 		}
 	} catch (error) {
 		console.error('Error handling start command:', error);
-		const errorMessage = `Sorry, something went wrong: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`;
+		const errorMessage = t('errors.generic', { error: JSON.stringify(error, Object.getOwnPropertyNames(error)) });
 		await context.reply(errorMessage);
 	}
 	return new Response('ok');
@@ -68,11 +69,11 @@ export async function handleChatIdCommand(context: TelegramExecutionContext, env
 			// Log interaction for /chatid command
 			await logInteraction(env.bot_users_db, user.id, 'command', message?.text, '/chatid');
 
-			await context.reply(`Your chat ID is: \`${user.id}\``);
+			await context.reply(t('commands.chat_id', { userId: user.id.toString() }));
 		}
 	} catch (error) {
 		console.error('Error handling chatid command:', error);
-		const errorMessage = `Sorry, something went wrong: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`;
+		const errorMessage = t('errors.generic', { error: JSON.stringify(error, Object.getOwnPropertyNames(error)) });
 		await context.reply(errorMessage);
 	}
 	return new Response('ok');
@@ -102,12 +103,12 @@ export async function handleStatsCommand(context: TelegramExecutionContext, env:
 				// Log interaction for /stats command
 				await logInteraction(env.bot_users_db, user.id, 'command', message?.text, '/stats');
 			} else {
-				await context.reply('Sorry, this command is only available to administrators.');
+				await context.reply(t('errors.admin_only'));
 			}
 		}
 	} catch (error) {
 		console.error('Error handling stats command:', error);
-		const errorMessage = `Sorry, something went wrong: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`;
+		const errorMessage = t('errors.generic', { error: JSON.stringify(error, Object.getOwnPropertyNames(error)) });
 		await context.reply(errorMessage);
 	}
 	return new Response('ok');
@@ -137,12 +138,12 @@ export async function handleReportCommand(context: TelegramExecutionContext, env
 				// Log interaction for /report command
 				await logInteraction(env.bot_users_db, user.id, 'command', message?.text, '/report');
 			} else {
-				await context.reply('Sorry, this command is only available to administrators.');
+				await context.reply(t('errors.admin_only'));
 			}
 		}
 	} catch (error) {
 		console.error('Error handling report command:', error);
-		const errorMessage = `Sorry, something went wrong: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`;
+		const errorMessage = t('errors.generic', { error: JSON.stringify(error, Object.getOwnPropertyNames(error)) });
 		await context.reply(errorMessage);
 	}
 	return new Response('ok');
@@ -170,12 +171,12 @@ export async function handleMessage(context: TelegramExecutionContext, env: Envi
 			// Regular bot response (only for non-command messages)
 			const text = message?.text?.toLowerCase();
 			if (!text?.startsWith('/')) {
-				await context.reply('yalan dunya!');
+				await context.reply(t('greetings.default_message'));
 			}
 		}
 	} catch (error) {
 		console.error('Error handling message:', error);
-		const errorMessage = `Sorry, something went wrong: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`;
+		const errorMessage = t('errors.generic', { error: JSON.stringify(error, Object.getOwnPropertyNames(error)) });
 		await context.reply(errorMessage);
 	}
 	return new Response('ok');
@@ -211,26 +212,14 @@ export async function handleRemindCommand(context: TelegramExecutionContext, env
 		const parsed = parseReminderText(text, userTimezone);
 
 		if (!parsed) {
-			await context.reply(
-				"🤔 I wasn't sure when you want the reminder. Can you specify the exact time or date?\n\n" +
-				"Examples:\n" +
-				"• `/remind me to call mom tomorrow at 7pm`\n" +
-				"• `/remind me to submit the report Friday at 2pm`\n" +
-				"• `/remind me to water plants this evening`"
-			);
+			await context.reply(t('reminders.parsing_failed'));
 			return new Response('ok');
 		}
 
 		// Check if the parsed date is in the past
 		const now = new Date();
 		if (parsed.scheduledAt <= now) {
-			await context.reply(
-				"⚠️ It looks like that time is in the past. Did you mean to schedule a **future** reminder?\n\n" +
-				"Please specify a time in the future, like:\n" +
-				"• `tomorrow at 7pm`\n" +
-				"• `next Friday at 2pm`\n" +
-				"• `in 2 hours`"
-			);
+			await context.reply(t('reminders.past_date'));
 			return new Response('ok');
 		}
 
@@ -238,13 +227,13 @@ export async function handleRemindCommand(context: TelegramExecutionContext, env
 		const formattedDate = formatDateForUser(parsed.scheduledAt, userTimezone);
 
 		// Generate confirmation message based on confidence level
-		let confirmationMessage = `Got it! I'll remind you to **${parsed.task}** on **${formattedDate}**.`;
+		let confirmationMessage = t('reminders.confirmation', { task: parsed.task, date: formattedDate });
 
 		if (parsed.confidence === 'low') {
-			confirmationMessage += "\n\n⚠️ I'm not completely sure about the timing. Please double-check if this looks correct.";
+			confirmationMessage += t('reminders.low_confidence_warning');
 		}
 
-		confirmationMessage += "\n\nReply with **yes** or **y** to confirm, or **no** to cancel.";
+		confirmationMessage += t('reminders.confirmation_prompt');
 
 		await context.reply(confirmationMessage);
 
@@ -268,13 +257,13 @@ export async function handleRemindCommand(context: TelegramExecutionContext, env
 				.bind(parsed.task, tempReminderId)
 				.run();
 
-			await context.reply("✅ Reminder created successfully!");
+			await context.reply(t('reminders.created_successfully'));
 		}
 
 	} catch (error) {
 		console.error('Error handling remind command:', error);
-		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		await context.reply(`Sorry, something went wrong while creating your reminder: ${errorMessage}`);
+		const errorMessage = error instanceof Error ? error.message : t('errors.unknown_error');
+		await context.reply(t('errors.reminder_creation_failed', { error: errorMessage }));
 	}
 	return new Response('ok');
 }
@@ -314,29 +303,24 @@ export async function handleRemindersCommand(context: TelegramExecutionContext, 
 			// Delete specific reminder
 			const reminderId = parseInt(args[1]);
 			if (isNaN(reminderId)) {
-				await context.reply('❌ Please provide a valid reminder ID number.\n\nExample: `/reminders delete 123`');
+				await context.reply(t('errors.invalid_reminder_id', { example: '123' }));
 				return new Response('ok');
 			}
 
 			const success = await deleteReminder(env.bot_users_db, reminderId, user.id);
 			if (success) {
-				await context.reply(`✅ Reminder #${reminderId} has been deleted.`);
+				await context.reply(t('reminders.deleted_successfully', { reminderId: reminderId.toString() }));
 			} else {
-				await context.reply(`❌ Could not delete reminder #${reminderId}. Make sure the ID is correct and belongs to you.`);
+				await context.reply(t('errors.reminder_delete_failed', { reminderId: reminderId.toString() }));
 			}
 		} else {
-			await context.reply(
-				'🔧 **Reminders Commands:**\n\n' +
-				'• `/reminders` - View all your active reminders\n' +
-				'• `/reminders delete <id>` - Delete a specific reminder\n\n' +
-				'Example: `/reminders delete 123`'
-			);
+			await context.reply(t('reminders_commands.title') + t('reminders_commands.commands'));
 		}
 
 	} catch (error) {
 		console.error('Error handling reminders command:', error);
-		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		await context.reply(`Sorry, something went wrong: ${errorMessage}`);
+		const errorMessage = error instanceof Error ? error.message : t('errors.unknown_error');
+		await context.reply(t('errors.generic', { error: errorMessage }));
 	}
 	return new Response('ok');
 }
@@ -363,40 +347,23 @@ export async function handleHelpCommand(context: TelegramExecutionContext, env: 
 		// Log interaction
 		await logInteraction(env.bot_users_db, user.id, 'command', message?.text, '/help');
 
-		const helpMessage = `🤖 **I'm your Reminder Bot!** You can ask me to remind you about things in natural language.
-
-✅ **Try:**
-• \`/remind me to call dad tomorrow at 6pm\`
-• \`/remind me to check the status 2 weeks from now\`
-• \`/remind me to water the plants this Friday at 9am\`
-• \`/remind me to submit the report next Monday\`
-
-📅 I'll parse the time, confirm with you, and remind you at the right moment!
-
-🔧 **Other commands:**
-• \`/reminders\` - View your active reminders
-• \`/reminders delete <ID>\` - Delete a specific reminder
-• \`/chatid\` - Get your Telegram chat ID
-• \`/help\` - Show this help message
-
-${isAdmin(user.id.toString(), env.ADMIN_CHAT_ID) ? `
-🛠️ **Admin commands:**
-• \`/stats\` or \`/report\` - Bot statistics
-• \`/admin reminders\` - View all reminders
-• \`/admin reminders <user_id>\` - View user's reminders
-` : ''}
-
-💡 **Tips:**
-• I understand natural language - just tell me when you want to be reminded!
-• All times are in your timezone (default: Asia/Tehran)
-• I'll ask for confirmation if I'm not sure about the timing`;
+		const helpMessage = t('help.title') +
+			t('help.examples_title') +
+			t('help.examples') +
+			t('help.parsing_info') +
+			t('help.other_commands_title') +
+			t('help.other_commands') +
+			(isAdmin(user.id.toString(), env.ADMIN_CHAT_ID) ?
+				t('help.admin_commands_title') + t('help.admin_commands') : '') +
+			t('help.tips_title') +
+			t('help.tips');
 
 		await context.reply(helpMessage);
 
 	} catch (error) {
 		console.error('Error handling help command:', error);
-		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		await context.reply(`Sorry, something went wrong: ${errorMessage}`);
+		const errorMessage = error instanceof Error ? error.message : t('errors.unknown_error');
+		await context.reply(t('errors.generic', { error: errorMessage }));
 	}
 	return new Response('ok');
 }
@@ -423,7 +390,7 @@ export async function handleAdminCommand(context: TelegramExecutionContext, env:
 
 		// Check if user is admin
 		if (!isAdmin(user.id.toString(), env.ADMIN_CHAT_ID)) {
-			await context.reply('❌ Sorry, this command is only available to administrators.');
+			await context.reply(t('errors.admin_only'));
 			return new Response('ok');
 		}
 
@@ -434,19 +401,13 @@ export async function handleAdminCommand(context: TelegramExecutionContext, env:
 		const args = text.split(' ').slice(1); // Remove '/admin'
 
 		if (args.length === 0) {
-			await context.reply(
-				'🛠️ **Admin Commands:**\n\n' +
-				'• `/admin reminders` - View all active reminders\n' +
-				'• `/admin reminders <user_id>` - View reminders for specific user\n\n' +
-				'Other admin commands:\n' +
-				'• `/stats` or `/report` - Bot statistics'
-			);
+			await context.reply(t('admin.commands_title') + t('admin.commands_list'));
 		} else if (args[0] === 'reminders') {
 			if (args[1]) {
 				// Show reminders for specific user
 				const userId = parseInt(args[1]);
 				if (isNaN(userId)) {
-					await context.reply('❌ Please provide a valid user ID number.\n\nExample: `/admin reminders 123456789`');
+					await context.reply(t('errors.invalid_user_id', { example: '123456789' }));
 					return new Response('ok');
 				}
 
@@ -458,13 +419,13 @@ export async function handleAdminCommand(context: TelegramExecutionContext, env:
 				await context.reply(remindersView);
 			}
 		} else {
-			await context.reply('❌ Unknown admin command. Use `/admin` to see available commands.');
+			await context.reply(t('errors.unknown_admin_command'));
 		}
 
 	} catch (error) {
 		console.error('Error handling admin command:', error);
-		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		await context.reply(`Sorry, something went wrong: ${errorMessage}`);
+		const errorMessage = error instanceof Error ? error.message : t('errors.unknown_error');
+		await context.reply(t('errors.generic', { error: errorMessage }));
 	}
 	return new Response('ok');
 }

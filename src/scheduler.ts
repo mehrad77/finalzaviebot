@@ -1,5 +1,6 @@
 import { Environment } from './types.js';
 import { getDueReminders, markReminderAsSent, formatDateForUser } from './reminder-utils.js';
+import { t } from './i18n.js';
 
 /**
  * Send a reminder to a user via Telegram
@@ -17,7 +18,10 @@ async function sendReminder(
 		// Format the original scheduled time for context
 		const originalTime = formatDateForUser(new Date(scheduledAt), timezone);
 
-		const message = `⏰ **Reminder**\n\n${taskDescription}\n\n📅 Originally scheduled for: ${originalTime}`;
+		const message = t('reminders.notification_message', {
+			task: taskDescription,
+			originalTime: originalTime
+		});
 
 		const response = await fetch(url, {
 			method: 'POST',

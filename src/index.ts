@@ -1,5 +1,6 @@
 import TelegramBot from '@codebam/cf-workers-telegram-bot';
 import { Environment } from './types.js';
+import { t } from './i18n.js';
 import {
 	handleStartCommand,
 	handleChatIdCommand,
@@ -29,7 +30,7 @@ export default {
 			.on('message', async (context) => handleMessage(context, env))
 			.handle(request.clone());
 
-		return new Response('yalan dunya!');
+		return new Response(t('greetings.default_message'));
 	},
 
 	async scheduled(event: ScheduledEvent, env: Environment, ctx: ExecutionContext): Promise<void> {
