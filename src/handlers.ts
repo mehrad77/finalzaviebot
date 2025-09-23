@@ -226,7 +226,7 @@ export async function handleRemindCommand(context: TelegramExecutionContext, env
 		const userTimezone = await getUserTimezone(env.bot_users_db, user.id);
 
 		// Parse the reminder text
-		const parsed = parseReminderText(text, userTimezone);
+		const parsed = await parseReminderText(text, userTimezone, new Date(), env);
 
 		if (!parsed) {
 			await context.reply(t('reminders.parsing_failed'), 'MarkdownV2');

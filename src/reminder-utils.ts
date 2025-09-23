@@ -10,6 +10,53 @@ function escapeMarkdownV2(text: string): string {
 }
 
 /**
+ * Generate a better task name using AI
+ */
+async function generateTaskNameWithAI(env: Environment, originalTask: string): Promise<string> {
+	// Fallback to original task if AI is not available
+	if (!env.ai) {
+		return originalTask || 'Reminder';
+	}
+
+	try {
+		const messages = [
+			{
+				role: 'system',
+				content: 'You are a helpful assistant that creates concise, clear task names for reminders. Convert the user\'s natural language into a brief, actionable task description. Keep it under 50 characters and make it sound natural. Just return the task name, nothing else.'
+			},
+			{
+				role: 'user',
+				content: `Convert this reminder text into a clear task name: "${originalTask}"`
+			}
+		];
+
+		const response = await env.ai.run('@cf/meta/llama-3.2-11b-vision-instruct', {
+			messages,
+			max_tokens: 50,
+			temperature: 0.3
+		});
+
+		// Extract the response text
+		let aiTaskName = (response as any)?.response || '';
+
+		// Clean up the response (remove quotes, extra whitespace)
+		aiTaskName = aiTaskName.trim().replace(/^["']|["']$/g, '');
+
+		// Ensure it's not too long
+		if (aiTaskName.length > 60) {
+			aiTaskName = aiTaskName.substring(0, 57) + '...';
+		}
+
+		// Return AI-generated name if it looks valid, otherwise fallback
+		return aiTaskName && aiTaskName.length > 3 ? aiTaskName : (originalTask || 'Reminder');
+	} catch (error) {
+		console.error('Error generating task name with AI:', error);
+		// Fallback to original task on error
+		return originalTask || 'Reminder';
+	}
+}
+
+/**
  * Parse recurring patterns from text
  * @param text - Text like "every 3 hours", "every day", "every week"
  * @returns RecurrencePattern or null if not recurring
@@ -143,17 +190,19 @@ export function calculateNextOccurrence(
 }
 
 /**
- * Parse natural language text for reminder creation (updated to support recurring)
+ * Parse natural language text for reminder creation (updated to support recurring and AI-generated task names)
  * @param text - The natural language text (e.g., "remind me to call mom tomorrow at 7pm")
  * @param userTimezone - User's timezone (default: 'Asia/Tehran')
  * @param referenceDate - Reference date for parsing (default: current time)
+ * @param env - Environment object containing AI binding (optional)
  * @returns Parsed reminder object or null if parsing failed
  */
-export function parseReminderText(
+export async function parseReminderText(
 	text: string,
 	userTimezone: string = 'Asia/Tehran',
-	referenceDate: Date = new Date()
-): { task: string; scheduledAt: Date; confidence: 'high' | 'medium' | 'low'; isRecurring?: boolean; recurrencePattern?: RecurrencePattern } | null {
+	referenceDate: Date = new Date(),
+	env?: Environment
+): Promise<{ task: string; scheduledAt: Date; confidence: 'high' | 'medium' | 'low'; isRecurring?: boolean; recurrencePattern?: RecurrencePattern } | null> {
 	// Remove the "/remind" or "remind" command and "me to" prefix
 	const cleanText = text
 		.replace(/^\/remind\s+/i, '')
@@ -194,11 +243,22 @@ export function parseReminderText(
 			const scheduledAt = new Date(referenceDate);
 			scheduledAt.setSeconds(0, 0); // Clean up seconds/milliseconds
 
+			// Generate AI task name for recurring reminders too
+			let finalTask = cleanText.replace(/every\s+\d+\s+(minutes?|hours?|days?|weeks?|months?)/gi, '')
+				.replace(/every\s+(minute|hour|day|week|month)/gi, '')
+				.replace(/\b(daily|hourly|weekly|monthly)\b/gi, '')
+				.trim() || 'Recurring reminder';
+
+			if (env && env.ai) {
+				try {
+					finalTask = await generateTaskNameWithAI(env, cleanText);
+				} catch (error) {
+					console.error('Error generating AI task name for recurring reminder:', error);
+				}
+			}
+
 			return {
-				task: cleanText.replace(/every\s+\d+\s+(minutes?|hours?|days?|weeks?|months?)/gi, '')
-					.replace(/every\s+(minute|hour|day|week|month)/gi, '')
-					.replace(/\b(daily|hourly|weekly|monthly)\b/gi, '')
-					.trim() || 'Recurring reminder',
+				task: finalTask,
 				scheduledAt,
 				confidence: 'medium',
 				isRecurring: true,
@@ -232,6 +292,17 @@ export function parseReminderText(
 			.replace(/\s+/g, ' ');
 	}
 
+	// Generate a better task name using AI if available
+	let finalTask = task || 'Reminder';
+	if (env && env.ai) {
+		try {
+			finalTask = await generateTaskNameWithAI(env, cleanText);
+		} catch (error) {
+			console.error('Error generating AI task name:', error);
+			// Keep the original task name on error
+		}
+	}
+
 	// Determine confidence based on the specificity of the parsed result
 	let confidence: 'high' | 'medium' | 'low' = 'low';
 
@@ -247,7 +318,7 @@ export function parseReminderText(
 	}
 
 	const returnValue: any = {
-		task: task || 'Reminder',
+		task: finalTask,
 		scheduledAt,
 		confidence
 	};

@@ -2,6 +2,7 @@ export interface Environment {
 	SECRET_TELEGRAM_API_TOKEN: string;
 	ADMIN_CHAT_ID: string;
 	bot_users_db: D1Database;
+	ai?: Ai;
 }
 
 export interface User {
