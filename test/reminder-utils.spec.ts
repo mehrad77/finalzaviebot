@@ -298,7 +298,11 @@ describe('Reminder Utils', () => {
 					'/remind me to call mom tomorrow',
 					'/Remind me to call mom tomorrow',
 					'/REMIND me to call mom tomorrow',
-					'  /remind   me   to   call mom tomorrow  '
+					'  /remind   me   to   call mom tomorrow  ',
+					'remind me to call mom tomorrow',
+					'Remind me to call mom tomorrow',
+					'REMIND me to call mom tomorrow',
+					'  remind   me   to   call mom tomorrow  '
 				];
 
 				variations.forEach(variation => {
@@ -307,6 +311,19 @@ describe('Reminder Utils', () => {
 						expect(result.task.toLowerCase()).toContain('call mom');
 					}
 				});
+			});
+
+			it('should parse commands without slash prefix', () => {
+				const result = parseReminderText(
+					'remind me to buy groceries tomorrow at 5pm',
+					'Asia/Tehran',
+					referenceDate
+				);
+
+				expect(result).not.toBeNull();
+				expect(result?.task.toLowerCase()).toContain('buy groceries');
+				expect(result?.scheduledAt).toBeInstanceOf(Date);
+				expect(result?.scheduledAt.getTime()).toBeGreaterThan(referenceDate.getTime());
 			});
 		});
 

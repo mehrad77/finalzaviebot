@@ -37,7 +37,19 @@ export async function handleStartCommand(context: TelegramExecutionContext, env:
 					await logInteraction(env.bot_users_db, user.id, 'start', message?.text, '/start');
 				}
 
-				await context.reply(t('greetings.start'), 'MarkdownV2');
+				// Show help message on start
+				const helpMessage = t('help.title') +
+					t('help.examples_title') +
+					t('help.examples') +
+					t('help.parsing_info') +
+					t('help.other_commands_title') +
+					t('help.other_commands') +
+					(user ? (isAdmin(user.id.toString(), env.ADMIN_CHAT_ID) ?
+						t('help.admin_commands_title') + t('help.admin_commands') : '') : '') +
+					t('help.tips_title') +
+					t('help.tips');
+
+				await context.reply(helpMessage, 'MarkdownV2');
 				break;
 
 			default:
@@ -169,9 +181,13 @@ export async function handleMessage(context: TelegramExecutionContext, env: Envi
 			// Log interaction
 			await logInteraction(env.bot_users_db, user.id, 'message', message?.text);
 
-			// Regular bot response (only for non-command messages)
+			// Check if message starts with "remind" (with or without slash)
 			const text = message?.text?.toLowerCase();
-			if (!text?.startsWith('/')) {
+			if (text?.startsWith('remind ')) {
+				// Handle as reminder command
+				return await handleRemindCommand(context, env);
+			} else if (!text?.startsWith('/')) {
+				// Regular bot response (only for non-command messages)
 				await context.reply(t('greetings.default_message'), 'MarkdownV2');
 			}
 		}

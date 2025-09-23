@@ -147,9 +147,10 @@ export function parseReminderText(
 	userTimezone: string = 'Asia/Tehran',
 	referenceDate: Date = new Date()
 ): { task: string; scheduledAt: Date; confidence: 'high' | 'medium' | 'low'; isRecurring?: boolean; recurrencePattern?: RecurrencePattern } | null {
-	// Remove the "/remind" command and "me to" prefix
+	// Remove the "/remind" or "remind" command and "me to" prefix
 	const cleanText = text
 		.replace(/^\/remind\s+/i, '')
+		.replace(/^remind\s+/i, '')
 		.replace(/^me\s+to\s+/i, '');
 
 	// Check for recurring patterns first
