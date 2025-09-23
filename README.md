@@ -107,7 +107,7 @@ To find your Telegram user ID:
 The bot understands natural language date/time expressions and recurring patterns:
 1. **Recurring patterns:** "every X hours/minutes/days/weeks/months", "daily", "weekly", "hourly", "monthly"
 2. Parse your request and extract the task, timing, and recurrence
-3. Ask for confirmation if the timing looks correct
+3. Create the reminder immediately
 4. Send you reminders at the specified intervals
 5. Automatically create the next occurrence after each reminder is sent
 6. Handle timezone conversion (default: Asia/Tehran)

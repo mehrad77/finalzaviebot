@@ -3,7 +3,7 @@ const locale = localeData as any;
 
 /**
  * Translation function that retrieves localized strings with parameter substitution
- * @param key - Dot-separated key path (e.g., 'errors.generic', 'reminders.confirmation')
+ * @param key - Dot-separated key path (e.g., 'errors.generic', 'reminders.created_successfully')
  * @param params - Object with parameters to substitute in the string
  * @returns Localized string with parameters substituted
  */

@@ -111,7 +111,7 @@ describe('i18n Translation Function', () => {
 	});
 
 	describe('Real-world Scenarios', () => {
-		it('should handle reminder deletion confirmation', () => {
+		it('should handle reminder deletion success message', () => {
 			const result = t('reminders.deleted_successfully', { reminderId: '123' });
 			expect(result).toBe('✅ Reminder \\#123 has been deleted\\.');
 		});

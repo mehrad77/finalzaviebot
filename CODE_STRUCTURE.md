@@ -133,7 +133,6 @@ The bot uses the `chrono-node` library to parse natural language date/time expre
 
 - **Supported formats**: "tomorrow", "next Friday", "in 2 hours", "March 15th at 3pm", etc.
 - **Timezone handling**: All parsing respects user's timezone (default: Asia/Tehran)
-- **Confidence levels**: Bot asks for confirmation when parsing confidence is low
 - **Recurring patterns**: Custom parsing for patterns like "every 3 hours", "daily", "weekly"
 
 ## Recurring Reminders Architecture

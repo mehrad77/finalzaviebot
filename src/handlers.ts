@@ -224,71 +224,38 @@ export async function handleRemindCommand(context: TelegramExecutionContext, env
 			return new Response('ok');
 		}
 
-		// Format the date for confirmation
-		const formattedDate = formatDateForUser(parsed.scheduledAt, userTimezone);
-
-		// Generate confirmation message based on confidence level and recurring status
-		let confirmationMessage = '';
-
+		// Create the reminder directly
 		if (parsed.isRecurring && parsed.recurrencePattern) {
-			confirmationMessage = t('reminders.recurring_confirmation', {
-				task: parsed.task,
-				firstDate: formattedDate,
-				interval: `${parsed.recurrencePattern.value} ${parsed.recurrencePattern.unit}`
-			});
-		} else {
-			confirmationMessage = t('reminders.confirmation', { task: parsed.task, date: formattedDate });
-		}
-
-		if (parsed.confidence === 'low') {
-			confirmationMessage += t('reminders.low_confidence_warning');
-		}
-
-		confirmationMessage += t('reminders.confirmation_prompt');
-
-		await context.reply(confirmationMessage, 'MarkdownV2');
-
-		// Create the reminder
-		let tempReminderId;
-		if (parsed.isRecurring && parsed.recurrencePattern) {
-			tempReminderId = await createReminder(
+			await createReminder(
 				env.bot_users_db,
 				user.id,
-				`TEMP:${parsed.task}`,
+				parsed.task,
 				parsed.scheduledAt,
 				userTimezone,
 				true,
 				parsed.recurrencePattern
 			);
 		} else {
-			tempReminderId = await createReminder(
+			await createReminder(
 				env.bot_users_db,
 				user.id,
-				`TEMP:${parsed.task}`,
+				parsed.task,
 				parsed.scheduledAt,
 				userTimezone
 			);
 		}
 
-		// Auto-confirm if confidence is high, otherwise require user confirmation
-		if (parsed.confidence === 'high') {
-			// Update the temp reminder to be active
-			await env.bot_users_db
-				.prepare('UPDATE reminders SET task_description = ?, is_active = TRUE WHERE id = ?')
-				.bind(parsed.task, tempReminderId)
-				.run();
-
-			let successMessage = '';
-			if (parsed.isRecurring && parsed.recurrencePattern) {
-				successMessage = t('reminders.recurring_created_successfully', {
-					interval: `${parsed.recurrencePattern.value} ${parsed.recurrencePattern.unit}`
-				});
-			} else {
-				successMessage = t('reminders.created_successfully');
-			}
-
-			await context.reply(successMessage, 'MarkdownV2');
+		// Send success message
+		let successMessage = '';
+		if (parsed.isRecurring && parsed.recurrencePattern) {
+			successMessage = t('reminders.recurring_created_successfully', {
+				interval: `${parsed.recurrencePattern.value} ${parsed.recurrencePattern.unit}`
+			});
+		} else {
+			successMessage = t('reminders.created_successfully');
 		}
+
+		await context.reply(successMessage, 'MarkdownV2');
 
 	} catch (error) {
 		console.error('Error handling remind command:', error);
