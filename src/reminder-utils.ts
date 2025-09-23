@@ -3,6 +3,13 @@ import { Environment, Reminder, RecurrencePattern } from './types.js';
 import { t } from './i18n.js';
 
 /**
+ * Escape special characters for MarkdownV2
+ */
+function escapeMarkdownV2(text: string): string {
+	return text.replace(/[_*\[\]()~`>#+=|{}.!-]/g, '\\$&');
+}
+
+/**
  * Parse recurring patterns from text
  * @param text - Text like "every 3 hours", "every day", "every week"
  * @returns RecurrencePattern or null if not recurring
@@ -539,27 +546,27 @@ export function formatRemindersList(reminders: Reminder[]): string {
 
 	reminders.forEach((reminder, index) => {
 		const scheduledDate = new Date(reminder.scheduled_at);
-		const formattedDate = formatDateForUser(scheduledDate, reminder.timezone);
+		const formattedDate = escapeMarkdownV2(formatDateForUser(scheduledDate, reminder.timezone));
 		const isOverdue = scheduledDate < new Date();
 
 		let recurringInfo = '';
 		if (reminder.is_recurring && reminder.recurrence_pattern) {
 			try {
 				const pattern: RecurrencePattern = JSON.parse(reminder.recurrence_pattern);
-				recurringInfo = ` 🔄 (every ${pattern.value} ${pattern.unit})`;
+				recurringInfo = ` 🔄 \\(every ${pattern.value} ${pattern.unit}\\)`;
 
 				// Add occurrence count if available
 				if (reminder.occurrence_count && reminder.occurrence_count > 0) {
-					recurringInfo += ` [${reminder.occurrence_count} times]`;
+					recurringInfo += ` \\[${reminder.occurrence_count} times\\]`;
 				}
 			} catch (error) {
-				recurringInfo = ' 🔄 (recurring)';
+				recurringInfo = ' 🔄 \\(recurring\\)';
 			}
 		}
 
 		message += t('reminders.reminder_item', {
 			index: index + 1,
-			task: reminder.task_description,
+			task: escapeMarkdownV2(reminder.task_description),
 			date: formattedDate,
 			overdue: isOverdue ? t('reminders.overdue_marker') : '',
 			id: reminder.id?.toString() || ''
@@ -605,36 +612,34 @@ export async function getAdminRemindersView(db: D1Database, specificUserId?: num
 		? t('admin.reminders_view_user', { userId: specificUserId })
 		: t('admin.reminders_view_all', { count: reminders.length });
 
-	reminders.forEach((reminder, index) => {
-		const scheduledDate = new Date(reminder.scheduled_at);
-		const formattedDate = formatDateForUser(scheduledDate, reminder.timezone);
-		const isOverdue = scheduledDate < new Date();
-		const userName = reminder.first_name || reminder.username || 'Unknown';
+		reminders.forEach((reminder, index) => {
+			const scheduledDate = new Date(reminder.scheduled_at);
+			const formattedDate = escapeMarkdownV2(formatDateForUser(scheduledDate, reminder.timezone));
+			const isOverdue = scheduledDate < new Date();
+			const userName = escapeMarkdownV2(reminder.first_name || reminder.username || 'Unknown');
 
-		let recurringInfo = '';
-		if (reminder.is_recurring && reminder.recurrence_pattern) {
-			try {
-				const pattern: RecurrencePattern = JSON.parse(reminder.recurrence_pattern);
-				recurringInfo = ` 🔄 (every ${pattern.value} ${pattern.unit})`;
+			let recurringInfo = '';
+			if (reminder.is_recurring && reminder.recurrence_pattern) {
+				try {
+					const pattern: RecurrencePattern = JSON.parse(reminder.recurrence_pattern);
+					recurringInfo = ` 🔄 \\(every ${pattern.value} ${pattern.unit}\\)`;
 
-				if (reminder.occurrence_count && reminder.occurrence_count > 0) {
-					recurringInfo += ` [${reminder.occurrence_count}x]`;
+					if (reminder.occurrence_count && reminder.occurrence_count > 0) {
+						recurringInfo += ` \\[${reminder.occurrence_count}x\\]`;
+					}
+				} catch (error) {
+					recurringInfo = ' 🔄 \\(recurring\\)';
 				}
-			} catch (error) {
-				recurringInfo = ' 🔄 (recurring)';
 			}
-		}
 
-		message += t('admin.admin_reminder_item', {
-			index: index + 1,
-			task: reminder.task_description,
-			userName: userName,
-			userId: reminder.telegram_id,
-			date: formattedDate,
-			overdue: isOverdue ? t('reminders.overdue_marker') : '',
-			id: reminder.id?.toString() || ''
-		}) + recurringInfo + '\n';
-	});
-
-	return message;
+			message += t('admin.admin_reminder_item', {
+				index: index + 1,
+				task: escapeMarkdownV2(reminder.task_description),
+				userName: userName,
+				userId: reminder.telegram_id,
+				date: formattedDate,
+				overdue: isOverdue ? t('reminders.overdue_marker') : '',
+				id: reminder.id?.toString() || ''
+			}) + recurringInfo + '\n';
+		});	return message;
 }

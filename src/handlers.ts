@@ -309,9 +309,21 @@ export async function handleRemindersCommand(context: TelegramExecutionContext, 
 
 		if (args.length === 0) {
 			// List all reminders
+			console.log('Fetching reminders for user:', user.id);
 			const reminders = await getUserReminders(env.bot_users_db, user.id);
+			console.log('Found reminders:', reminders.length);
 			const formattedList = formatRemindersList(reminders);
-			await context.reply(formattedList, 'MarkdownV2');
+			console.log('Formatted list length:', formattedList.length);
+
+			try {
+				await context.reply(formattedList, 'MarkdownV2');
+				console.log('Successfully sent reminders list with MarkdownV2');
+			} catch (markdownError) {
+				// If MarkdownV2 fails, try without formatting
+				console.error('MarkdownV2 error in reminders list:', markdownError);
+				await context.reply(formattedList);
+				console.log('Sent reminders list without markdown formatting');
+			}
 		} else if (args[0] === 'delete' && args[1]) {
 			// Delete specific reminder
 			const reminderId = parseInt(args[1]);
@@ -456,12 +468,34 @@ export async function handleAdminCommand(context: TelegramExecutionContext, env:
 					return new Response('ok');
 				}
 
+				console.log('Admin fetching reminders for user:', userId);
 				const remindersView = await getAdminRemindersView(env.bot_users_db, userId);
-				await context.reply(remindersView, 'MarkdownV2');
+				console.log('Admin user reminders view length:', remindersView.length);
+
+				try {
+					await context.reply(remindersView, 'MarkdownV2');
+					console.log('Successfully sent admin user reminders with MarkdownV2');
+				} catch (markdownError) {
+					// If MarkdownV2 fails, try without formatting
+					console.error('MarkdownV2 error in admin reminders view:', markdownError);
+					await context.reply(remindersView);
+					console.log('Sent admin user reminders without markdown formatting');
+				}
 			} else {
 				// Show all reminders
+				console.log('Admin fetching all reminders');
 				const remindersView = await getAdminRemindersView(env.bot_users_db);
-				await context.reply(remindersView, 'MarkdownV2');
+				console.log('Admin reminders view length:', remindersView.length);
+
+				try {
+					await context.reply(remindersView, 'MarkdownV2');
+					console.log('Successfully sent admin reminders with MarkdownV2');
+				} catch (markdownError) {
+					// If MarkdownV2 fails, try without formatting
+					console.error('MarkdownV2 error in admin reminders view:', markdownError);
+					await context.reply(remindersView);
+					console.log('Sent admin reminders without markdown formatting');
+				}
 			}
 		} else {
 			await context.reply(t('errors.unknown_admin_command'), 'MarkdownV2');
